@@ -113,7 +113,13 @@ export const EducationForm: React.FC = () => {
   });
 
   const onSubmit = (data: EducationsFormData) => {
-    updateCurrentCV({ education: data.items });
+    const sanitizedEducation = data.items.map((item) => ({
+      ...item,
+      city: item.city || '',
+      endDate: item.endDate || '',
+      description: item.description || '',
+    }));
+    updateCurrentCV({ education: sanitizedEducation });
     nextStep();
   };
 
