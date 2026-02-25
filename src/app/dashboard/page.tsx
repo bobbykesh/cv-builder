@@ -1,10 +1,11 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useRef } from 'react';
 import styled from 'styled-components';
-import { Header, Footer, Button } from '@/components/shared';
+import { Header, Footer, Button, LoadingSpinner } from '@/components/shared';
 import CVList from '@/components/builder/CVList';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
+import { useCVParser } from '@/hooks/useCVParser';
 
 const Main = styled.main`
   background-color: ${({ theme }) => theme.colors.backgroundAlt};
@@ -25,24 +26,61 @@ const HeaderRow = styled.div`
   margin-bottom: 30px;
 `;
 
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 15px;
+`;
+
+function DashboardContent() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { handleFileUpload, isParsing } = useCVParser();
+
+  return (
+    <>
+      <Container>
+        <HeaderRow>
+          <h1>My Documents</h1>
+          <ButtonGroup>
+            <Button 
+              onClick={() => fileInputRef.current?.click()} 
+              size="medium" 
+              variant="outline"
+              disabled={isParsing}
+            >
+              <Upload size={16} style={{ marginRight: 8 }} />
+              Upload CV
+            </Button>
+            
+            <Button href="/build-cv" size="medium">
+              <Plus size={16} style={{ marginRight: 8 }} />
+              Create New
+            </Button>
+          </ButtonGroup>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            accept=".pdf,.docx"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+        </HeaderRow>
+
+        <CVList />
+      </Container>
+      {isParsing && <LoadingSpinner fullScreen text="Revamping your CV..." />}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <>
       <Header />
       <Main>
-        <Container>
-          <HeaderRow>
-            <h1>My Documents</h1>
-            <Button href="/build-cv" size="medium">
-              <Plus size={16} style={{ marginRight: 8 }} />
-              Create New
-            </Button>
-          </HeaderRow>
-
-          <Suspense fallback={<p>Loading...</p>}>
-            <CVList />
-          </Suspense>
-        </Container>
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+          <DashboardContent />
+        </Suspense>
       </Main>
       <Footer />
     </>
