@@ -67,10 +67,12 @@ const TemplateCard = styled.div`
   transition: all 0.3s ease;
   position: relative;
   cursor: pointer;
+  border: 1px solid ${({ theme }) => theme.colors.border};
 
   &:hover {
     transform: translateY(-5px);
     box-shadow: ${({ theme }) => theme.shadows.lg};
+    border-color: ${({ theme }) => theme.colors.accent};
 
     .overlay {
       opacity: 1;
@@ -78,50 +80,84 @@ const TemplateCard = styled.div`
   }
 `;
 
-const PreviewImage = styled.div<{ $color: string }>`
+// ----- CSS-Based Template Previews -----
+
+const PreviewContainer = styled.div`
   aspect-ratio: 210/297;
-  background-color: ${({ theme }) => theme.colors.backgroundAlt};
+  background: white;
   position: relative;
-  padding: 15px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  padding: 10px;
+`;
 
-  /* Simplified CV Preview CSS */
-  &::before {
-    content: '';
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+// Modern Template (Sidebar Left)
+const ModernPreview = styled(PreviewContainer)<{ $color: string }>`
+  flex-direction: row;
+  padding: 0;
+
+  .sidebar {
+    width: 30%;
     background-color: ${({ $color }) => $color};
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .main {
+    width: 70%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
     margin-bottom: 10px;
   }
 
-  &::after {
-    content: '';
-    width: 60%;
-    height: 10px;
-    background-color: ${({ theme }) => theme.colors.text};
-    border-radius: 4px;
-    opacity: 0.8;
+  .line {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    margin-bottom: 4px;
+  }
+
+  .sidebar .line {
+    background: rgba(255,255,255,0.3);
   }
 `;
 
-const Lines = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
+// Classic Template (Centered Header)
+const ClassicPreview = styled(PreviewContainer)`
+  align-items: center;
+  padding: 20px;
 
-  span {
-    height: 6px;
-    background-color: ${({ theme }) => theme.colors.border};
-    border-radius: 3px;
-    
-    &:nth-child(1) { width: 100%; }
-    &:nth-child(2) { width: 90%; }
-    &:nth-child(3) { width: 95%; }
-    &:nth-child(4) { width: 80%; }
+  .header {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+
+  .line {
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin-bottom: 6px;
+    width: 100%;
+  }
+
+  .section {
+    width: 100%;
+    margin-bottom: 10px;
   }
 `;
 
@@ -151,6 +187,52 @@ const TemplateName = styled.h3`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+// Helper component to render the correct preview style
+const TemplatePreview: React.FC<{ id: string; color: string }> = ({ id, color }) => {
+  if (id === 'modern' || id === 'professional' || id === 'bold') {
+    return (
+      <ModernPreview $color={color}>
+        <div className="sidebar">
+          <div className="avatar" />
+          <div className="line" style={{ width: '80%' }} />
+          <div className="line" style={{ width: '60%' }} />
+          <div className="line" style={{ marginTop: 10, width: '40%' }} />
+          <div className="line" />
+          <div className="line" />
+        </div>
+        <div className="main">
+          <div className="line" style={{ height: 8, width: '60%', background: '#333' }} />
+          <div className="line" style={{ height: 6, width: '40%' }} />
+          <div className="line" style={{ marginTop: 15, width: '30%', background: color }} />
+          <div className="line" />
+          <div className="line" />
+          <div className="line" style={{ width: '90%' }} />
+        </div>
+      </ModernPreview>
+    );
+  }
+
+  // Default / Classic
+  return (
+    <ClassicPreview>
+      <div className="header">
+        <div className="line" style={{ height: 8, width: '50%', margin: '0 auto 5px', background: '#333' }} />
+        <div className="line" style={{ width: '30%', margin: '0 auto' }} />
+      </div>
+      <div className="section">
+        <div className="line" style={{ width: '25%', background: color }} />
+        <div className="line" />
+        <div className="line" style={{ width: '90%' }} />
+      </div>
+      <div className="section">
+        <div className="line" style={{ width: '25%', background: color }} />
+        <div className="line" />
+        <div className="line" style={{ width: '80%' }} />
+      </div>
+    </ClassicPreview>
+  );
+};
+
 function TemplateList() {
   const router = useRouter();
   const { createNewCV, isLoading } = useCV();
@@ -167,28 +249,11 @@ function TemplateList() {
   return (
     <Grid>
       {TEMPLATES.map((template) => (
-        <TemplateCard key={template.id}>
-          <PreviewImage $color={template.colors[0]}>
-            <Lines>
-              <span />
-              <span />
-              <span />
-              <span />
-            </Lines>
-            <Lines style={{ marginTop: 20 }}>
-              <span style={{ width: '40%', height: 8, background: template.colors[0] }} />
-              <span />
-              <span />
-            </Lines>
-          </PreviewImage>
+        <TemplateCard key={template.id} onClick={() => handleSelect(template.id, template.colors[0])}>
+          <TemplatePreview id={template.id} color={template.colors[0]} />
           
           <Overlay className="overlay">
-            <Button
-              size="small"
-              onClick={() => handleSelect(template.id, template.colors[0])}
-            >
-              Select Template
-            </Button>
+            <Button size="small">Use Template</Button>
           </Overlay>
 
           <CardFooter>
