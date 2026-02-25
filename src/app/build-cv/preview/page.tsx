@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import styled from 'styled-components';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useCVStore } from '@/store/cvStore';
@@ -51,7 +51,8 @@ const ButtonGroup = styled.div`
   gap: 15px;
 `;
 
-export default function PreviewPage() {
+// This component uses useSearchParams, so it MUST be inside Suspense
+function PreviewContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const { loadCV, currentCV } = useCVStore();
@@ -65,51 +66,60 @@ export default function PreviewPage() {
   if (!currentCV) return <LoadingSpinner fullScreen />;
 
   return (
+    <Container>
+      <Sidebar>
+        <div>
+          <Title>Ready to download?</Title>
+          <Description>
+            Your CV is looking great! Choose a format to download.
+          </Description>
+        </div>
+
+        <ButtonGroup>
+          <Button
+            variant="primary"
+            onClick={() => exportCV(currentCV, { format: 'txt' })}
+            disabled={isExporting}
+          >
+            <Download size={18} style={{ marginRight: 8 }} />
+            Download as TXT
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => exportCV(currentCV, { format: 'pdf' })}
+            disabled={isExporting}
+          >
+            <Download size={18} style={{ marginRight: 8 }} />
+            Download as PDF (Text only)
+          </Button>
+
+          <div style={{ height: 20 }} />
+
+          <Button
+            variant="link"
+            onClick={() => router.push(`/build-cv/editor?id=${currentCV.id}`)}
+          >
+            <ArrowLeft size={16} style={{ marginRight: 5 }} /> Back to Editor
+          </Button>
+        </ButtonGroup>
+      </Sidebar>
+
+      <PreviewArea>
+        <LivePreview />
+      </PreviewArea>
+    </Container>
+  );
+}
+
+// Main page component - wraps content in Suspense
+export default function PreviewPage() {
+  return (
     <>
       <Header />
-      <Container>
-        <Sidebar>
-          <div>
-            <Title>Ready to download?</Title>
-            <Description>
-              Your CV is looking great! Choose a format to download.
-            </Description>
-          </div>
-
-          <ButtonGroup>
-            <Button
-              variant="primary"
-              onClick={() => exportCV(currentCV, { format: 'txt' })}
-              disabled={isExporting}
-            >
-              <Download size={18} style={{ marginRight: 8 }} />
-              Download as TXT
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => exportCV(currentCV, { format: 'pdf' })}
-              disabled={isExporting}
-            >
-              <Download size={18} style={{ marginRight: 8 }} />
-              Download as PDF (Text only)
-            </Button>
-
-            <div style={{ height: 20 }} />
-
-            <Button
-              variant="link"
-              onClick={() => router.push(`/build-cv/editor?id=${currentCV.id}`)}
-            >
-              <ArrowLeft size={16} style={{ marginRight: 5 }} /> Back to Editor
-            </Button>
-          </ButtonGroup>
-        </Sidebar>
-
-        <PreviewArea>
-          <LivePreview />
-        </PreviewArea>
-      </Container>
+      <Suspense fallback={<LoadingSpinner fullScreen text="Loading preview..." />}>
+        <PreviewContent />
+      </Suspense>
     </>
   );
 }
