@@ -8,6 +8,7 @@ const nextConfig = {
     unoptimized: false,
   },
   output: 'standalone',
+  // This is required for pdfjs-dist to work in Next.js
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
