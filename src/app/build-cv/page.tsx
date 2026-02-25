@@ -1,125 +1,224 @@
 'use client';
 
-import React, { useEffect, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import styled from 'styled-components';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useCVStore } from '@/store/cvStore';
-import { useExport } from '@/hooks/useExport';
-import { Header, Button, LoadingSpinner } from '@/components/shared';
-import LivePreview from '@/components/builder/LivePreview';
-import { Download, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Header, Footer, Button, LoadingSpinner } from '@/components/shared';
+import { TEMPLATES } from '@/types/template';
+import { useCV } from '@/hooks/useCV';
+import { media } from '@/styles/breakpoints';
+
+const Main = styled.main`
+  background-color: ${({ theme }) => theme.colors.backgroundAlt};
+  min-height: calc(100vh - 80px);
+  padding: 40px 0;
+`;
 
 const Container = styled.div`
-  display: flex;
-  height: calc(100vh - 80px);
-  background: #f0f0f0;
+  width: 100%;
+  padding: 0 30px;
+  margin: 0 auto;
+
+  ${media.md} {
+    max-width: 1170px;
+    padding: 0 15px;
+  }
 `;
 
-const Sidebar = styled.div`
-  width: 350px;
+const HeaderSection = styled.div`
+  text-align: center;
+  margin-bottom: 40px;
+`;
+
+const Title = styled.h1`
+  font-size: 3.2rem;
+  margin-bottom: 16px;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.6rem;
+  color: ${({ theme }) => theme.colors.textLight};
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 30px;
+
+  ${media.sm} {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  ${media.lg} {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  ${media.xl} {
+    grid-template-columns: repeat(4, 1fr);
+  }
+`;
+
+const TemplateCard = styled.div`
   background: white;
-  padding: 30px;
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const PreviewArea = styled.div`
-  flex: 1;
+  border-radius: 8px;
   overflow: hidden;
-  padding: 40px;
-  display: flex;
-  justify-content: center;
-  background: #555;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  transition: all 0.3s ease;
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: ${({ theme }) => theme.shadows.lg};
+
+    .overlay {
+      opacity: 1;
+    }
+  }
 `;
 
-const Title = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 10px;
-`;
-
-const Description = styled.p`
-  color: #666;
-  font-size: 1.4rem;
-  margin-bottom: 20px;
-`;
-
-const ButtonGroup = styled.div`
+const PreviewImage = styled.div<{ $color: string }>`
+  aspect-ratio: 210/297;
+  background-color: ${({ theme }) => theme.colors.backgroundAlt};
+  position: relative;
+  padding: 15px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
+
+  /* Simplified CV Preview CSS */
+  &::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: ${({ $color }) => $color};
+    margin-bottom: 10px;
+  }
+
+  &::after {
+    content: '';
+    width: 60%;
+    height: 10px;
+    background-color: ${({ theme }) => theme.colors.text};
+    border-radius: 4px;
+    opacity: 0.8;
+  }
 `;
 
-// This component uses useSearchParams, so it MUST be inside Suspense
-function PreviewContent() {
-  const searchParams = useSearchParams();
-  const id = searchParams.get('id');
-  const { loadCV, currentCV } = useCVStore();
+const Lines = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+
+  span {
+    height: 6px;
+    background-color: ${({ theme }) => theme.colors.border};
+    border-radius: 3px;
+    
+    &:nth-child(1) { width: 100%; }
+    &:nth-child(2) { width: 90%; }
+    &:nth-child(3) { width: 95%; }
+    &:nth-child(4) { width: 80%; }
+  }
+`;
+
+const Overlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 45, 107, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+`;
+
+const CardFooter = styled.div`
+  padding: 16px;
+  text-align: center;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderLight};
+`;
+
+const TemplateName = styled.h3`
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+function TemplateList() {
   const router = useRouter();
-  const { exportCV, isExporting } = useExport();
+  const { createNewCV, isLoading } = useCV();
 
-  useEffect(() => {
-    if (id) loadCV(id);
-  }, [id, loadCV]);
+  const handleSelect = (templateId: string, color: string) => {
+    const newCV = createNewCV(templateId, color);
+    if (newCV) {
+      router.push(`/build-cv/editor?id=${newCV.id}`);
+    }
+  };
 
-  if (!currentCV) return <LoadingSpinner fullScreen />;
+  if (isLoading) return <LoadingSpinner fullScreen text="Creating your CV..." />;
 
   return (
-    <Container>
-      <Sidebar>
-        <div>
-          <Title>Ready to download?</Title>
-          <Description>
-            Your CV is looking great! Choose a format to download.
-          </Description>
-        </div>
-
-        <ButtonGroup>
-          <Button
-            variant="primary"
-            onClick={() => exportCV(currentCV, { format: 'txt' })}
-            disabled={isExporting}
-          >
-            <Download size={18} style={{ marginRight: 8 }} />
-            Download as TXT
-          </Button>
+    <Grid>
+      {TEMPLATES.map((template) => (
+        <TemplateCard key={template.id}>
+          <PreviewImage $color={template.colors[0]}>
+            <Lines>
+              <span />
+              <span />
+              <span />
+              <span />
+            </Lines>
+            <Lines style={{ marginTop: 20 }}>
+              <span style={{ width: '40%', height: 8, background: template.colors[0] }} />
+              <span />
+              <span />
+            </Lines>
+          </PreviewImage>
           
-          <Button
-            variant="outline"
-            onClick={() => exportCV(currentCV, { format: 'pdf' })}
-            disabled={isExporting}
-          >
-            <Download size={18} style={{ marginRight: 8 }} />
-            Download as PDF (Text only)
-          </Button>
+          <Overlay className="overlay">
+            <Button
+              size="small"
+              onClick={() => handleSelect(template.id, template.colors[0])}
+            >
+              Select Template
+            </Button>
+          </Overlay>
 
-          <div style={{ height: 20 }} />
-
-          <Button
-            variant="link"
-            onClick={() => router.push(`/build-cv/editor?id=${currentCV.id}`)}
-          >
-            <ArrowLeft size={16} style={{ marginRight: 5 }} /> Back to Editor
-          </Button>
-        </ButtonGroup>
-      </Sidebar>
-
-      <PreviewArea>
-        <LivePreview />
-      </PreviewArea>
-    </Container>
+          <CardFooter>
+            <TemplateName>{template.name}</TemplateName>
+          </CardFooter>
+        </TemplateCard>
+      ))}
+    </Grid>
   );
 }
 
-// Main page component - wraps content in Suspense
-export default function PreviewPage() {
+export default function TemplateSelectionPage() {
   return (
     <>
       <Header />
-      <Suspense fallback={<LoadingSpinner fullScreen text="Loading preview..." />}>
-        <PreviewContent />
-      </Suspense>
+      <Main>
+        <Container>
+          <HeaderSection>
+            <Title>Choose a Template</Title>
+            <Subtitle>
+              Select a design to start building your professional CV
+            </Subtitle>
+          </HeaderSection>
+          
+          <Suspense fallback={<LoadingSpinner />}>
+            <TemplateList />
+          </Suspense>
+        </Container>
+      </Main>
+      <Footer />
     </>
   );
 }
