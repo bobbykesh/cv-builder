@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import styled from 'styled-components';
-import { Button, Badge } from '@/components/shared';
+import { Button, Badge, LoadingSpinner } from '@/components/shared';
 import HeroAnimation from './HeroAnimation';
 import { media } from '@/styles/breakpoints';
+import { useCVParser } from '@/hooks/useCVParser';
+import { UploadCloud } from 'lucide-react';
 
 const HeroSection = styled.section`
   background-color: ${({ theme }) => theme.colors.backgroundAlt};
@@ -121,7 +123,18 @@ const BadgeWrapper = styled.div`
   }
 `;
 
+const HiddenInput = styled.input`
+  display: none;
+`;
+
 export const Hero: React.FC = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { handleFileUpload, isParsing } = useCVParser();
+
+  const onUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <HeroSection>
       <Container>
@@ -143,19 +156,32 @@ export const Hero: React.FC = () => {
               <Button href="/build-cv" variant="primary" size="large">
                 Start a new CV
               </Button>
-              <Button href="/build-cv" variant="secondary" size="large">
-                Upload my CV
+              
+              <Button 
+                onClick={onUploadClick} 
+                variant="secondary" 
+                size="large"
+                disabled={isParsing}
+              >
+                {isParsing ? 'Revamping...' : 'Upload & Revamp CV'}
               </Button>
+              <HiddenInput 
+                type="file" 
+                ref={fileInputRef}
+                accept=".pdf,.docx"
+                onChange={handleFileUpload}
+              />
             </ButtonWrapper>
 
             <BadgeWrapper>
               <Badge variant="gradient" icon>
-                AI-supported
+                AI-supported Revamp
               </Badge>
             </BadgeWrapper>
           </ContentBox>
         </Content>
       </Container>
+      {isParsing && <LoadingSpinner fullScreen text="Reading and revamping your CV..." />}
     </HeroSection>
   );
 };
