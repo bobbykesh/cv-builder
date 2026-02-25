@@ -17,6 +17,7 @@ interface ButtonProps {
   title?: string;
   type?: 'button' | 'submit' | 'reset';
   target?: '_blank' | '_self';
+  style?: React.CSSProperties; // Added this line
 }
 
 const baseButtonStyles = css`
@@ -176,6 +177,7 @@ export const Button: React.FC<ButtonProps> = ({
   title,
   type = 'button',
   target = '_self',
+  style, // Added here
 }) => {
   const styleProps = {
     $variant: variant,
@@ -186,7 +188,7 @@ export const Button: React.FC<ButtonProps> = ({
   // External link
   if (href && target === '_blank') {
     return (
-      <ButtonWrapper $variant={variant} className={className}>
+      <ButtonWrapper $variant={variant} className={className} style={style}>
         <StyledExternalLink
           href={href}
           target="_blank"
@@ -203,7 +205,7 @@ export const Button: React.FC<ButtonProps> = ({
   // Internal link
   if (href) {
     return (
-      <ButtonWrapper $variant={variant} className={className}>
+      <ButtonWrapper $variant={variant} className={className} style={style}>
         <StyledLink href={href} title={title} {...styleProps}>
           {children}
         </StyledLink>
@@ -213,7 +215,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   // Button
   return (
-    <ButtonWrapper $variant={variant} className={className}>
+    <ButtonWrapper $variant={variant} className={className} style={style}>
       <StyledButton
         type={type}
         onClick={onClick}
