@@ -9,6 +9,7 @@ import { useCV } from '@/hooks/useCV';
 import { Button } from '@/components/shared';
 import { skillSchema } from '@/lib/utils/validators';
 import { z } from 'zod';
+import { SkillLevel } from '@/types/cv';
 
 const skillsSchema = z.object({
   items: z.array(skillSchema),
@@ -103,7 +104,12 @@ export const SkillsForm: React.FC = () => {
   });
 
   const onSubmit = (data: SkillsFormData) => {
-    updateCurrentCV({ skills: data.items });
+    // Explicitly casting level to SkillLevel
+    const sanitizedSkills = data.items.map(item => ({
+      ...item,
+      level: item.level as SkillLevel
+    }));
+    updateCurrentCV({ skills: sanitizedSkills });
     nextStep();
   };
 
