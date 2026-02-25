@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styled from 'styled-components';
 import { useCVStore } from '@/store/cvStore';
@@ -11,7 +11,7 @@ import EducationForm from '@/components/builder/EducationForm';
 import SkillsForm from '@/components/builder/SkillsForm';
 import SummaryForm from '@/components/builder/SummaryForm';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/shared';
+import { Header, LoadingSpinner } from '@/components/shared';
 
 const EditorLayout = styled.div`
   display: flex;
@@ -24,10 +24,10 @@ const MainContent = styled.main`
   background-color: ${({ theme }) => theme.colors.backgroundAlt};
 `;
 
-export default function EditorPage() {
+function EditorContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
-  const { loadCV, currentCV, currentStep, setCurrentStep } = useCVStore();
+  const { loadCV, currentCV, currentStep } = useCVStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function EditorPage() {
     }
   }, [id, router]);
 
-  if (!currentCV) return null;
+  if (!currentCV) return <LoadingSpinner fullScreen text="Loading editor..." />;
 
   // Render current step component
   const renderStep = () => {
@@ -67,12 +67,22 @@ export default function EditorPage() {
   };
 
   return (
-    <EditorLayout>
-      <Header />
+    <>
       <StepWizard />
       <MainContent>
         {renderStep()}
       </MainContent>
+    </>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <EditorLayout>
+      <Header />
+      <Suspense fallback={<LoadingSpinner fullScreen text="Initializing editor..." />}>
+        <EditorContent />
+      </Suspense>
     </EditorLayout>
   );
 }
