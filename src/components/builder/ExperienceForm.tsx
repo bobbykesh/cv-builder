@@ -124,7 +124,13 @@ export const ExperienceForm: React.FC = () => {
   });
 
   const onSubmit = (data: ExperiencesFormData) => {
-    updateCurrentCV({ experience: data.items });
+    const sanitizedExperience = data.items.map((item) => ({
+      ...item,
+      city: item.city || '',
+      endDate: item.endDate || '',
+      description: item.description || '',
+    }));
+    updateCurrentCV({ experience: sanitizedExperience });
     nextStep();
   };
 
